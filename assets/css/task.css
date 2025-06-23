@@ -1,0 +1,81 @@
+    body {
+      margin: 0;
+      padding: 0;
+      background-image: url('../images/Bg\ Soal.png');
+      background-size: cover;
+      background-position: center;
+      font-family: 'Press Start 2P', cursive;
+      color: #fff;
+    }
+
+    .quiz-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    .question-box {
+      background: url('images/question-box.png'); /* Ganti dengan gambar kotak soal */
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      width: 90%;
+      max-width: 700px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      margin-top: 20px;
+      text-align: center;
+      color: #3a2b1a;
+      font-size: 14px;
+    }
+
+    .options {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 50px;
+    }
+
+    .option {
+      background-image: url('images/option.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      width: 100px;
+      height: 130px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-size: 12px;
+      color: #3a1e1e;
+      cursor: pointer;
+      padding-bottom: 10px;
+      transition: transform 0.2s;
+    }
+
+    .option:hover {
+      transform: scale(1.05);
+    }
+
+    .top-banner, .bottom-banner {
+      position: absolute;
+      width: 100px;
+      height: auto;
+    }
+
+    .top-banner {
+      top: 10px;
+      left: 10px;
+    }
+
+    .bottom-banner {
+      bottom: 10px;
+      left: 10px;
+    }
