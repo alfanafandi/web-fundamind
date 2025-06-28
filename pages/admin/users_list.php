@@ -1,7 +1,7 @@
 <?php
 include __DIR__ . '/../db.php';
 
-$query = "SELECT id_user, username, level, xp FROM users ORDER BY id_user ASC";
+$query = "SELECT id_user, username, level, xp, coin FROM users ORDER BY id_user ASC";
 $result = mysqli_query($koneksi, $query);
 ?>
 
@@ -38,6 +38,7 @@ $result = mysqli_query($koneksi, $query);
                 <th class="px-4 py-3 text-left">ID</th>
                 <th class="px-4 py-3 text-left">Username</th>
                 <th class="px-4 py-3 text-center">Level</th>
+                <th class="px-4 py-3 text-center">Coin</th>
                 <th class="px-4 py-3 text-center">Aksi</th>
               </tr>
             </thead>
@@ -50,8 +51,9 @@ $result = mysqli_query($koneksi, $query);
                   <td class="px-4 py-3"><?php echo $user['id_user']; ?></td>
                   <td class="px-4 py-3"><?php echo htmlspecialchars($user['username']); ?></td>
                   <td class="px-4 py-3 text-center"><?php echo $user['level']; ?></td>
+                  <td class="px-4 py-3 text-center"><?php echo $user['coin']; ?></td>
                   <td class="px-4 py-3 text-center space-x-2">
-                    <a href="users_update.php?id=<?php echo $user['id_user']; ?>" class="text-blue-600 hover:underline">Edit</a>
+                    <a href="index.php?modul=user&fitur=edit&id=<?php echo $user['id_user']; ?>" class="text-blue-600 hover:underline">Edit</a>
                     <a href="index.php?modul=user&fitur=delete&id=<?php echo $user['id_user']; ?>"
                       onclick="return confirm('Yakin ingin menghapus pengguna ini?')"
                       class="text-red-600 hover:underline">Hapus</a>

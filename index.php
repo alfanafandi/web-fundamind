@@ -31,4 +31,10 @@ if ($modul === 'achievement') {
     $controller->handle($fitur);
 }
 
+if ($modul === 'shop') {
+    include_once 'controllers/shop_controller.php';
+    $controller = new ShopController($koneksi);
+    $controller->handle($fitur);
+}
+
 

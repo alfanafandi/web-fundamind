@@ -35,7 +35,7 @@ class UserController {
                     exit;
                 }
                 $user = $this->userModel->getById($id);
-                include 'pages/admin/users_edit.php';
+                include 'pages/admin/users_update.php';
                 break;
 
             case 'delete':
