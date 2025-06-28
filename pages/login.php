@@ -7,29 +7,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $password = $_POST['password'] ?? '';
 
   $username = mysqli_real_escape_string($koneksi, $username);
-  $result = mysqli_query($koneksi, "SELECT * FROM users WHERE username = '$username'");
 
-  if ($result && mysqli_num_rows($result) === 1) {
-    $user = mysqli_fetch_assoc($result);
-
-    if (password_verify($password, $user['password'])) {
-      $_SESSION['user_id'] = $user['id_user'];
-      $_SESSION['username'] = $user['username'];
-      $_SESSION['avatar'] = $user['avatar'];
-
-      $user_id = $user['id_user'];
-      mysqli_query($koneksi, "INSERT IGNORE INTO user_achievements (id_user, id_achievement) VALUES ($user_id, 1)");
-
-      header("Location: dashboard.php");
-      exit;
+  if ($username === 'admin') {
+    $result = mysqli_query($koneksi, "SELECT * FROM admin WHERE username = '$username'");
+    if ($result && mysqli_num_rows($result) === 1) {
+      $admin = mysqli_fetch_assoc($result);
+      if (password_verify($password, $admin['password'])) {
+        $_SESSION['admin'] = true;
+        $_SESSION['admin_username'] = $admin['username'];
+        header("Location: /Fundamind-main/index.php?modul=admin&fitur=dashboard");
+        exit;
+      } else {
+        $error = "Password admin salah.";
+      }
     } else {
-      $error = "Password salah.";
+      $error = "Admin tidak ditemukan.";
     }
   } else {
-    $error = "Akun tidak ditemukan.";
+    $result = mysqli_query($koneksi, "SELECT * FROM users WHERE username = '$username'");
+    if ($result && mysqli_num_rows($result) === 1) {
+      $user = mysqli_fetch_assoc($result);
+      if (password_verify($password, $user['password'])) {
+        $_SESSION['user_id'] = $user['id_user'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['avatar'] = $user['avatar'];
+
+        $user_id = $user['id_user'];
+        mysqli_query($koneksi, "INSERT IGNORE INTO user_achievements (id_user, id_achievement) VALUES ($user_id, 1)");
+
+        header("Location: dashboard.php");
+        exit;
+      } else {
+        $error = "Password salah.";
+      }
+    } else {
+      $error = "Akun tidak ditemukan.";
+    }
   }
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -70,8 +88,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body class="min-vh-100 d-flex align-items-center justify-content-center">
   <?php include 'includes/navbar.php'; ?>
+
   <div class="login-card text-center">
     <h2>Login</h2>
+
+    <?php if (!empty($error)): ?>
+      <div class="alert alert-danger mt-3"><?php echo $error; ?></div>
+    <?php endif; ?>
+
     <form method="POST">
       <div class="mb-3">
         <input type="text" name="username" class="form-control form-control-lg" placeholder="Username" required />
