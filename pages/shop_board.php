@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
 
         <!-- Tombol kembali di dalam papan -->
         <div class="text-center mt-4">
-            <a href="dashboard.php" class="btn-back">← Kembali</a>
+            <a href="shop.php" class="btn-back">← Kembali</a>
         </div>
     </div>
 

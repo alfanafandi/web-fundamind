@@ -37,4 +37,10 @@ if ($modul === 'shop') {
     $controller->handle($fitur);
 }
 
+if ($modul === 'quest') {
+    include_once 'controllers/quest_controller.php';
+    $controller = new QuestController($koneksi);
+    $controller->handle($fitur);
+}
+
 

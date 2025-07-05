@@ -47,14 +47,16 @@ if (
         <img
           src="../assets/images/StarShine.gif"
           alt="Star Shine"
-          style="width: 80px; height: 80px"
         />
       </div>
       </div>
 
       <!-- Tombol quest -->
       <section class="quest">
-        <a href="#" class="quest-box" id="openQuest"></a>
+        <a href="quest_box.php" class="quest-box"></a>
+        <div class="Star-Shineq">
+          <img src="../assets/images/StarShine.gif" alt="Star Shine Quest" />
+        </div>
       </section>
 
       <div id="questModalContainer"></div>
@@ -73,6 +75,5 @@ if (
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/guild-modal.js"></script>
   </body>
 </html>

@@ -98,6 +98,7 @@ $data = mysqli_fetch_assoc($result);
 
 
       <!-- Level -->
+      <!-- Level dan Rank -->
       <div class="col-md-6">
         <div class="profile-card">
           <h5 class="mb-3">Level</h5>
@@ -111,6 +112,28 @@ $data = mysqli_fetch_assoc($result);
               <?php echo round($progress); ?>% to next
             </div>
           </div>
+
+          <!-- Rank -->
+          <p class="mt-3">
+            <?php
+            $rank = 'Bronze';
+            if ($data['level'] >= 20) $rank = 'Diamond';
+            elseif ($data['level'] >= 15) $rank = 'Platinum';
+            elseif ($data['level'] >= 10) $rank = 'Gold';
+            elseif ($data['level'] >= 5) $rank = 'Silver';
+
+            $rank_color = [
+              'Bronze' => '#cd7f32',
+              'Silver' => '#c0c0c0',
+              'Gold' => '#ffd700',
+              'Platinum' => '#e5e4e2',
+              'Diamond' => '#b9f2ff'
+            ];
+            ?>
+            <strong style="color: <?php echo $rank_color[$rank]; ?>;">
+              🏆 <?php echo $rank; ?> Rank
+            </strong>
+          </p>
         </div>
       </div>
     </div>
