@@ -12,7 +12,7 @@ $user_id = $_SESSION['user_id'];
 // Ambil semua boss dan quest terkait
 $bosses = mysqli_query($koneksi, "
     SELECT b.*, q.judul AS judul_quest 
-    FROM boss_unlock_requirements b 
+    FROM boss_quests b 
     JOIN quests q ON b.id_quest = q.id_quest 
     ORDER BY b.id_boss ASC
 ");

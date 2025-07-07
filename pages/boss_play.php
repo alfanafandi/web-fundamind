@@ -19,7 +19,7 @@ if (!isset($_SESSION['boss_id']) || $_SESSION['boss_id'] != $id_boss) {
 // Ambil data boss
 $queryBoss = mysqli_query($koneksi, "
     SELECT b.*, q.judul AS judul_quest 
-    FROM boss_unlock_requirements b
+    FROM boss_quests b
     JOIN quests q ON b.id_quest = q.id_quest
     WHERE b.id_boss = $id_boss
 ");

@@ -65,7 +65,7 @@ if (mysqli_num_rows($cek_result) > 0) {
     // Ambil reward dari boss
     $boss = mysqli_fetch_assoc(mysqli_query($koneksi, "
         SELECT xp_reward, coin_reward 
-        FROM boss_unlock_requirements 
+        FROM boss_quests 
         WHERE id_boss = $id_boss
     "));
 

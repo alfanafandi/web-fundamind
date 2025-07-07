@@ -1,7 +1,15 @@
 <?php
 include __DIR__ . '/../db.php';
 
-$query = "SELECT id_user, username, level, xp, coin FROM users ORDER BY id_user ASC";
+$perPage = 9;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($page - 1) * $perPage;
+
+$totalResult = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users");
+$totalRows = mysqli_fetch_assoc($totalResult)['total'];
+$totalPages = ceil($totalRows / $perPage);
+
+$query = "SELECT id_user, username, level, xp, coin FROM users ORDER BY id_user ASC LIMIT $perPage OFFSET $offset";
 $result = mysqli_query($koneksi, $query);
 ?>
 
@@ -62,6 +70,15 @@ $result = mysqli_query($koneksi, $query);
               <?php endwhile; ?>
             </tbody>
           </table>
+        </div>
+        <!-- Pagination -->
+        <div class="mt-4 flex justify-center space-x-2">
+          <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <a href="?modul=user&fitur=list&page=<?php echo $i; ?>"
+               class="px-3 py-1 rounded <?php echo $i == $page ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'; ?>">
+              <?php echo $i; ?>
+            </a>
+          <?php endfor; ?>
         </div>
       </div>
     </div>

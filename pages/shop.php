@@ -38,10 +38,14 @@ if (
     <div class="welcome-seller" id="welcomeSeller"></div>
   </section>
 
+  <a href="shop_board.php" class="shop-board-link"></a>
+  <div class="starshine-board">
+    <img src="../assets/images/StarShine.gif" alt="StarShine Board" />
+  </div>
+
   <script>
     const messages = [
-      "Selamat Datang!",
-      "Di sini aku menjual berbagai item"
+      "Selamat Datang di Toko Fundamind, Klik untuk melihat Daftar Item!"
     ];
     let currentMessage = 0;
     const shopOwner = document.getElementById("shopOwner");

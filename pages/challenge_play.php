@@ -76,6 +76,19 @@ if (isset($_SESSION['last_challenge_date']) && $_SESSION['last_challenge_date'] 
     exit;
 }
 
+// Gunakan Chrono Clock
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_chrono'])) {
+    $_SESSION['challenge_bonus_time'] = ($_SESSION['challenge_bonus_time'] ?? 0) + 30;
+    mysqli_query($koneksi, "
+        UPDATE user_items SET jumlah = jumlah - 1 
+        WHERE id_user = $user_id 
+        AND id_item = (SELECT id_item FROM shop_items WHERE nama_item = 'Chrono Clock') 
+        AND jumlah > 0 LIMIT 1
+    ");
+    $_SESSION['notifikasi_item'] = '+30 detik dari Chrono Clock!';
+    header("Location: challenge_play.php");
+    exit;
+}
 
 // Ambil level user
 $user_data = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT level FROM users WHERE id_user = $user_id"));
@@ -98,15 +111,15 @@ if (!isset($_SESSION['challenge_questions'])) {
     $_SESSION['challenge_answers'] = [];
     $_SESSION['challenge_index'] = 0;
     $_SESSION['challenge_start_time'] = time();
+    $_SESSION['challenge_bonus_time'] = 0;
 }
 
 $questions = $_SESSION['challenge_questions'];
 $index = $_SESSION['challenge_index'] ?? 0;
 $total = count($questions);
 
-
 // Proses jawaban
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['jawaban'])) {
     $jawaban_user = $_POST['jawaban'] ?? '';
     $current_qid = $questions[$index]['id_question'];
     $_SESSION['challenge_answers'][$current_qid] = $jawaban_user;
@@ -127,6 +140,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $current_question = $questions[$index];
+
+// Ambil item
+$item_query = mysqli_query($koneksi, "
+    SELECT si.*, ui.jumlah 
+    FROM user_items ui 
+    JOIN shop_items si ON ui.id_item = si.id_item 
+    WHERE ui.id_user = $user_id AND ui.jumlah > 0
+");
+$user_items = [];
+while ($row = mysqli_fetch_assoc($item_query)) {
+    $user_items[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
@@ -211,6 +236,12 @@ $current_question = $questions[$index];
                 ⏱️ Waktu: <span id="timer">--:--</span>
             </div>
 
+            <?php if (isset($_SESSION['notifikasi_item'])): ?>
+                <div class="alert alert-info text-center">
+                    <strong><?= $_SESSION['notifikasi_item']; unset($_SESSION['notifikasi_item']); ?></strong>
+                </div>
+            <?php endif; ?>
+
             <div class="card-title">Soal <?= $index + 1 ?> dari <?= $total ?></div>
             <p class="mb-4"><?= nl2br(htmlspecialchars($current_question['pertanyaan'] ?? '-')) ?></p>
 
@@ -226,13 +257,57 @@ $current_question = $questions[$index];
                     <?php endforeach; ?>
                 </div>
             </form>
+
+            <div class="text-center mt-4">
+                <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#modalItem">🎒 Lihat Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Item -->
+    <div class="modal fade" id="modalItem" tabindex="-1" aria-labelledby="modalItemLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning-subtle">
+                    <h5 class="modal-title">🎒 Daftar Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <?php if (empty($user_items)): ?>
+                            <div class="col-12 text-center text-muted">Kamu belum punya item apapun.</div>
+                        <?php else: ?>
+                            <?php foreach ($user_items as $item): ?>
+                                <div class="col-md-4">
+                                    <div class="border rounded p-3 bg-light h-100 text-center">
+                                        <img src="../assets/images/<?= $item['file_icon'] ?>" height="40"><br>
+                                        <strong><?= $item['nama_item'] ?></strong>
+                                        <p class="small mb-1"><?= $item['deskripsi'] ?></p>
+                                        <p class="small text-muted">Jumlah: <?= $item['jumlah'] ?></p>
+
+                                        <?php if ($item['nama_item'] === 'Chrono Clock'): ?>
+                                            <form method="POST">
+                                                <input type="hidden" name="use_chrono" value="1">
+                                                <button class="btn btn-sm btn-info">+30 Detik</button>
+                                            </form>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-secondary" disabled>⛔ Tidak dapat digunakan</button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         const startTime = <?= $_SESSION['challenge_start_time'] ?? time() ?>;
+        const bonusTime = <?= $_SESSION['challenge_bonus_time'] ?? 0 ?>;
         const now = Math.floor(Date.now() / 1000);
-        let totalSeconds = Math.max(0, 180 - (now - startTime));
+        let totalSeconds = Math.max(0, 180 + bonusTime - (now - startTime));
 
         const timerElement = document.getElementById('timer');
 

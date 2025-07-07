@@ -1,89 +1,150 @@
 <?php
-include 'pages/db.php';
+include __DIR__ . '../../db.php';
 
-// Ambil ID quest dari URL
-$id_quest = $_GET['id'] ?? null;
+// Ambil ID item dari URL
+$id_item = $_GET['id'] ?? null;
+if (!$id_item) die("ID item tidak ditemukan.");
 
-if (!$id_quest) {
-    die("ID quest tidak ditemukan.");
-}
-
-// Ambil data quest dari database
-$query = "SELECT * FROM quests WHERE id_quest = $id_quest";
+// Ambil data item dari database
+$query = "SELECT * FROM shop_items WHERE id_item = $id_item";
 $result = mysqli_query($koneksi, $query);
-$quest = mysqli_fetch_assoc($result);
+$item = mysqli_fetch_assoc($result);
+if (!$item) die("Item tidak ditemukan.");
 
-if (!$quest) {
-    die("Data quest tidak ditemukan.");
+// Proses update jika form disubmit
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama_item = $_POST['nama_item'];
+    $tipe_item = $_POST['tipe_item'];
+    $deskripsi = $_POST['deskripsi'];
+    $harga_coin = (int)$_POST['harga_coin'];
+    $file_icon = $_POST['file_icon'];
+    $efek = $_POST['efek'];
+    $level_minimal = (int)$_POST['level_minimal'];
+    $tersedia = isset($_POST['tersedia']) ? 1 : 0;
+    $sekali_pakai = isset($_POST['sekali_pakai']) ? 1 : 0;
+
+    $update = "UPDATE shop_items SET 
+        nama_item='$nama_item',
+        tipe_item='$tipe_item',
+        deskripsi='$deskripsi',
+        harga_coin=$harga_coin,
+        file_icon='$file_icon',
+        efek='$efek',
+        level_minimal=$level_minimal,
+        tersedia=$tersedia,
+        sekali_pakai=$sekali_pakai
+        WHERE id_item = $id_item";
+
+    if (mysqli_query($koneksi, $update)) {
+        header("Location: index.php?modul=shop&fitur=list");
+        exit;
+    } else {
+        $error = "Gagal mengupdate item.";
+    }
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Edit Quest</title>
+    <meta charset="UTF-8">
+    <title>Edit Item Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
-    <?php include 'includes/navbar.php'; ?>
-    <div class="flex">
-        <?php include 'includes/sidebar.php'; ?>
 
-        <div class="flex-1 p-8">
-            <h2 class="text-2xl font-bold mb-4 text-gray-800">Edit Quest</h2>
+<?php include 'includes/navbar.php'; ?>
+<div class="flex">
+    <?php include 'includes/sidebar.php'; ?>
 
-            <form action="index.php?modul=quest&fitur=edit&id=<?php echo $quest['id_quest']; ?>" method="POST" class="bg-white p-6 rounded shadow-md w-full max-w-xl">
-                <!-- Judul -->
+    <div class="flex-1 p-8">
+        <div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Edit Item Shop</h2>
+
+            <?php if (!empty($error)): ?>
+                <div class="text-red-600 mb-4"><?php echo $error; ?></div>
+            <?php endif; ?>
+
+            <form method="POST">
                 <div class="mb-4">
-                    <label for="judul" class="block text-gray-700 font-semibold mb-1">Judul Quest</label>
-                    <input type="text" name="judul" id="judul" class="w-full p-2 border border-gray-300 rounded" required value="<?php echo htmlspecialchars($quest['judul']); ?>">
+                    <label for="nama_item" class="block text-gray-700 text-sm font-bold mb-2">Nama Item</label>
+                    <input type="text" id="nama_item" name="nama_item"
+                           value="<?php echo htmlspecialchars($item['nama_item']); ?>"
+                           class="shadow border rounded w-full py-2 px-3 text-gray-700">
                 </div>
 
-                <!-- Kategori -->
                 <div class="mb-4">
-                    <label for="kategori" class="block text-gray-700 font-semibold mb-1">Kategori</label>
-                    <select name="kategori" id="kategori" class="w-full p-2 border border-gray-300 rounded" required>
-                        <option value="story" <?php if($quest['kategori'] == 'story') echo 'selected'; ?>>Story</option>
-                        <option value="daily" <?php if($quest['kategori'] == 'daily') echo 'selected'; ?>>Daily</option>
-                        <option value="challenge" <?php if($quest['kategori'] == 'challenge') echo 'selected'; ?>>Challenge</option>
-                    </select>
+                    <label for="tipe_item" class="block text-gray-700 text-sm font-bold mb-2">Tipe Item</label>
+                    <input type="text" id="tipe_item" name="tipe_item"
+                           value="<?php echo htmlspecialchars($item['tipe_item']); ?>"
+                           class="shadow border rounded w-full py-2 px-3 text-gray-700">
                 </div>
 
-                <!-- XP Reward -->
                 <div class="mb-4">
-                    <label for="xp_reward" class="block text-gray-700 font-semibold mb-1">XP Reward</label>
-                    <input type="number" name="xp_reward" id="xp_reward" class="w-full p-2 border border-gray-300 rounded" min="0" required value="<?php echo $quest['xp_reward']; ?>">
+                    <label for="deskripsi" class="block text-gray-700 text-sm font-bold mb-2">Deskripsi</label>
+                    <textarea id="deskripsi" name="deskripsi"
+                              class="shadow border rounded w-full py-2 px-3 text-gray-700"
+                              rows="3"><?php echo htmlspecialchars($item['deskripsi']); ?></textarea>
                 </div>
 
-                <!-- Coin Reward -->
                 <div class="mb-4">
-                    <label for="coin_reward" class="block text-gray-700 font-semibold mb-1">Coin Reward</label>
-                    <input type="number" name="coin_reward" id="coin_reward" class="w-full p-2 border border-gray-300 rounded" min="0" required value="<?php echo $quest['coin_reward']; ?>">
+                    <label for="harga_coin" class="block text-gray-700 text-sm font-bold mb-2">Harga (Coin)</label>
+                    <input type="number" id="harga_coin" name="harga_coin"
+                           value="<?php echo $item['harga_coin']; ?>"
+                           class="shadow border rounded w-full py-2 px-3 text-gray-700" min="0">
                 </div>
 
-                <!-- Gambar Icon -->
                 <div class="mb-4">
-                    <label for="gambar_icon" class="block text-gray-700 font-semibold mb-1">Nama File Icon (mis: clue.png)</label>
-                    <input type="text" name="gambar_icon" id="gambar_icon" class="w-full p-2 border border-gray-300 rounded" required value="<?php echo htmlspecialchars($quest['gambar_icon']); ?>">
+                    <label for="file_icon" class="block text-gray-700 text-sm font-bold mb-2">File Icon</label>
+                    <input type="text" id="file_icon" name="file_icon"
+                           value="<?php echo htmlspecialchars($item['file_icon']); ?>"
+                           class="shadow border rounded w-full py-2 px-3 text-gray-700">
                 </div>
 
-                <!-- Deskripsi -->
                 <div class="mb-4">
-                    <label for="deskripsi" class="block text-gray-700 font-semibold mb-1">Deskripsi</label>
-                    <textarea name="deskripsi" id="deskripsi" rows="3" class="w-full p-2 border border-gray-300 rounded"><?php echo htmlspecialchars($quest['deskripsi']); ?></textarea>
+                    <label for="efek" class="block text-gray-700 text-sm font-bold mb-2">Efek</label>
+                    <input type="text" id="efek" name="efek"
+                           value="<?php echo htmlspecialchars($item['efek']); ?>"
+                           class="shadow border rounded w-full py-2 px-3 text-gray-700">
                 </div>
 
-                <!-- Submit -->
-                <div class="mt-6">
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                <div class="mb-4">
+                    <label for="level_minimal" class="block text-gray-700 text-sm font-bold mb-2">Level Minimal</label>
+                    <input type="number" id="level_minimal" name="level_minimal"
+                           value="<?php echo $item['level_minimal']; ?>"
+                           class="shadow border rounded w-full py-2 px-3 text-gray-700" min="0">
+                </div>
+
+                <div class="mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="tersedia" value="1" class="form-checkbox"
+                               <?php echo $item['tersedia'] ? 'checked' : ''; ?>>
+                        <span class="ml-2 text-gray-700">Tersedia</span>
+                    </label>
+                </div>
+
+                <div class="mb-6">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="sekali_pakai" value="1" class="form-checkbox"
+                               <?php echo $item['sekali_pakai'] ? 'checked' : ''; ?>>
+                        <span class="ml-2 text-gray-700">Sekali Pakai</span>
+                    </label>
+                </div>
+
+                <div class="flex justify-between">
+                    <button type="submit"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                         Simpan Perubahan
                     </button>
-                    <a href="index.php?modul=quest&fitur=list" class="ml-4 text-blue-600 hover:underline">Kembali</a>
+                    <a href="index.php?modul=shop&fitur=list"
+                       class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Batal
+                    </a>
                 </div>
             </form>
         </div>
     </div>
+</div>
+
 </body>
 </html>

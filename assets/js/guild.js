@@ -5,10 +5,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const nextChat = document.getElementById("nextChat");
 
   const chatMessages = [
-    "Welcome to the guild!",
-    "Here you can find quests and adventures.",
-    "Feel free to explore and ask for help.",
-    "Good luck on your journey!",
+    "Selamat Datang Di Guild!",
+    "Di sini kamu bisa menemukan quest dan petualangan.",
+    "Jangan ragu untuk menjelajah dan meminta bantuan.",
+    "Semoga sukses dalam perjalananmu!",
   ];
   let currentMessageIndex = 0;
 

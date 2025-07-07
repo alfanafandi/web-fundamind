@@ -66,7 +66,7 @@ if (
       <div class="modal-content">
         <img src="../assets/images/half-body_portrait_of_a_guild_master.png" class="halfbody-image" />
         <div class="chat-box">
-          <p id="chatText">Welcome to the guild!</p>
+          <p id="chatText">Selamat Datang Di Guild!</p>
           <button id="nextChat">Next</button>
         </div>
       </div>

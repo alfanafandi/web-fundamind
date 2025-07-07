@@ -122,7 +122,6 @@ while ($row = mysqli_fetch_assoc($result)) {
                         } else {
                             $url = "quest_chapter.php?id={$quest['id_quest']}";
                         }
-
                 ?>
                         <div class="col-md-4">
                             <a href="<?= $url ?>" class="text-decoration-none">

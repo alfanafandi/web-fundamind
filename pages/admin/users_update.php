@@ -102,8 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             min="0">
                     </div>
 
-
-
                     <!-- Password -->
                     <div class="mb-6">
                         <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password (Kosongkan jika tidak diubah)</label>

@@ -51,7 +51,7 @@
         🌟 Setiap jawaban benar membawamu selangkah lebih dekat menuju puncak kebijaksanaan.
       </p>
 
-      <p><strong>💬 Yuk, mulai petualanganmu sekarang!</strong></p>
+      <p><strong>💬 mulai petualanganmu sekarang!</strong></p>
     </div>
 
 

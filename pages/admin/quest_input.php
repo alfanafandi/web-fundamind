@@ -56,7 +56,6 @@ include 'pages/db.php';
                     <input type="text" name="gambar_icon" id="gambar_icon" class="w-full p-2 border border-gray-300 rounded" required>
                 </div>
 
-
                 <!-- Tombol Aksi -->
                 <div class="mt-6">
                     <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">

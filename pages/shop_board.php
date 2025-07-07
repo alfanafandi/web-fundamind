@@ -9,25 +9,44 @@ if (!isset($_SESSION['user_id'])) {
 
 $id_user = $_SESSION['user_id'];
 
-// Ambil koin user
-$userData = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT coin FROM users WHERE id_user = $id_user"));
+// Ambil data user (coin dan level)
+$userData = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT coin, level FROM users WHERE id_user = $id_user"));
 $coin = (int) $userData['coin'];
+$level = (int) $userData['level'];
 $message = "";
 
-// Proses pembelian
+// Proses pembelian item
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
-    $item = mysqli_real_escape_string($koneksi, $_POST['item']);
-    $price = (int) $_POST['price'];
+    $id_item = (int) $_POST['id_item'];
 
-    if ($coin >= $price) {
-        mysqli_query($koneksi, "UPDATE users SET coin = coin - $price WHERE id_user = $id_user");
-        mysqli_query($koneksi, "INSERT INTO user_items (id_user, nama_item, jumlah)
-          VALUES ($id_user, '$item', 1)
-          ON DUPLICATE KEY UPDATE jumlah = jumlah + 1");
-        $coin -= $price;
-        $message = "Berhasil membeli $item!";
+    // Ambil data item dari database
+    $item = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT * FROM shop_items WHERE id_item = $id_item"));
+    if ($item) {
+        $price = (int) $item['harga_coin'];
+        $nama_item = $item['nama_item'];
+        $level_required = (int) $item['level_minimal'];
+
+        if ($level < $level_required) {
+            $message = "Level kamu belum cukup untuk membeli <strong>$nama_item</strong>.";
+        } elseif ($coin >= $price) {
+            // Kurangi coin user
+            mysqli_query($koneksi, "UPDATE users SET coin = coin - $price WHERE id_user = $id_user");
+
+            // Tambah item ke user_items
+            $check = mysqli_query($koneksi, "SELECT * FROM user_items WHERE id_user = $id_user AND id_item = $id_item");
+            if (mysqli_num_rows($check) > 0) {
+                mysqli_query($koneksi, "UPDATE user_items SET jumlah = jumlah + 1 WHERE id_user = $id_user AND id_item = $id_item");
+            } else {
+                mysqli_query($koneksi, "INSERT INTO user_items (id_user, id_item, jumlah) VALUES ($id_user, $id_item, 1)");
+            }
+
+            $coin -= $price;
+            $message = "Berhasil membeli <strong>$nama_item</strong>!";
+        } else {
+            $message = "Koin tidak cukup untuk membeli <strong>$nama_item</strong>.";
+        }
     } else {
-        $message = "Koin tidak cukup untuk membeli $item.";
+        $message = "Item tidak ditemukan.";
     }
 }
 ?>
@@ -44,8 +63,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
         @font-face {
             font-family: "PixelifySans";
             src: url("../assets/fonts/PixelifySans-VariableFont_wght.ttf") format("truetype");
-            font-weight: normal;
-            font-style: normal;
         }
 
         body {
@@ -80,13 +97,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
             margin-right: 6px;
         }
 
+        h2.shop-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 32px;
+            color: #fff;
+            text-shadow: 2px 2px 3px #000;
+            margin-bottom: 20px;
+        }
+
         .item-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             border: 2px solid #fff;
             padding: 20px;
             border-radius: 12px;
             text-align: center;
+            background: rgba(255, 255, 255, 0.95);
             transition: transform 0.2s;
-            background: rgba(255, 255, 255, 0.85);
         }
 
         .item-card:hover {
@@ -96,6 +126,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
         .item-icon {
             height: 60px;
             margin-bottom: 10px;
+        }
+
+        .item-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .item-desc {
+            flex-grow: 1;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .price {
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .lock-msg {
+            color: #b10000;
+            font-size: 14px;
+            margin-bottom: 6px;
         }
 
         .btn-buy {
@@ -112,13 +166,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
             background-color: #0056b3;
         }
 
-        h2.shop-title {
-            text-align: center;
-            font-weight: bold;
-            font-size: 32px;
-            color: #fff;
-            text-shadow: 2px 2px 3px #000;
-            margin-bottom: 20px;
+        .btn-disabled {
+            background-color: gray;
+            pointer-events: none;
+            cursor: not-allowed;
         }
 
         .btn-back {
@@ -153,33 +204,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['buy'])) {
 
         <div class="row g-4">
             <?php
-            $items = [
-                ['XP Boost', 'xp.png', 15],
-                ['Clue', 'clue.png', 15],
-                ['Skin', 'skin.png', 10],
-                ['Skip Level Pass', 'skip.png', 15],
-                ['Magnifying Glass', 'magnify.png', 10],
-                ['Time Extension', 'time.png', 10],
-            ];
-
-            foreach ($items as $item) :
+            $result = mysqli_query($koneksi, "SELECT * FROM shop_items WHERE tersedia = 1 ORDER BY level_minimal ASC");
+            while ($item = mysqli_fetch_assoc($result)) :
+                $bisa_beli = $level >= (int)$item['level_minimal'];
             ?>
-                <div class="col-md-4">
-                    <div class="item-card">
-                        <img src="../assets/images/<?php echo $item[1]; ?>" alt="<?php echo $item[0]; ?>" class="item-icon" />
-                        <h5><?php echo $item[0]; ?></h5>
-                        <p><img src="../assets/images/realcoin.png" height="16"> <?php echo $item[2]; ?></p>
+                <div class="col-12 col-sm-6 col-md-6 col-lg-3 d-flex">
+                    <div class="item-card w-100">
+                        <div>
+                            <img src="../assets/images/<?php echo $item['file_icon']; ?>" alt="<?php echo $item['nama_item']; ?>" class="item-icon" />
+                            <div class="item-title"><?php echo $item['nama_item']; ?></div>
+                            <div class="item-desc"><?php echo $item['deskripsi']; ?></div>
+                            <div class="price"><img src="../assets/images/realcoin.png" height="16"> <?php echo $item['harga_coin']; ?></div>
+                        </div>
                         <form method="POST">
-                            <input type="hidden" name="item" value="<?php echo $item[0]; ?>">
-                            <input type="hidden" name="price" value="<?php echo $item[2]; ?>">
-                            <button class="btn-buy" name="buy">Beli</button>
+                            <input type="hidden" name="id_item" value="<?php echo $item['id_item']; ?>">
+                            <?php if ($level >= $item['level_minimal']) : ?>
+                                <button class="btn-buy" name="buy">Beli</button>
+                            <?php else : ?>
+                                <div class="lock-msg">🔒 Butuh Level <?php echo $item['level_minimal']; ?></div>
+                                <button class="btn-buy btn-disabled" disabled>Beli</button>
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>
-            <?php endforeach; ?>
+            <?php endwhile; ?>
         </div>
 
-        <!-- Tombol kembali di dalam papan -->
         <div class="text-center mt-4">
             <a href="shop.php" class="btn-back">← Kembali</a>
         </div>

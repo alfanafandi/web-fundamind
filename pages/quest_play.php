@@ -22,31 +22,58 @@ if ($total_questions === 0) {
     exit;
 }
 
-// Cek Magnifying Glass
-$has_magnifying = false;
-$magnifying_check = mysqli_query($koneksi, "SELECT id_user FROM user_items WHERE id_user = $user_id AND nama_item = 'Magnifying Glass' LIMIT 1");
-if ($item = mysqli_fetch_assoc($magnifying_check)) {
-    $has_magnifying = true;
-}
-
 if (!isset($_SESSION['question_data']) || $_SESSION['question_data']['id_chapter'] != $id_chapter) {
     $_SESSION['question_data'] = [
         'index' => 0,
         'answers' => [],
-        'use_magnifying' => false,
+        'use_hint' => false,
         'feedback' => [],
         'id_chapter' => $id_chapter
     ];
 }
 
-if (isset($_POST['use_magnifying']) && $has_magnifying && !$_SESSION['question_data']['use_magnifying']) {
-    $_SESSION['question_data']['use_magnifying'] = true;
-    mysqli_query($koneksi, "DELETE FROM user_items WHERE id_user = $user_id AND nama_item = 'Magnifying Glass' LIMIT 1");
+// Gunakan Insight Orb (petunjuk)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_insight_orb'])) {
+    $_SESSION['question_data']['use_hint'] = true;
+    mysqli_query($koneksi, "
+        UPDATE user_items SET jumlah = jumlah - 1 
+        WHERE id_user = $user_id 
+        AND id_item = (SELECT id_item FROM shop_items WHERE nama_item = 'Insight Orb') 
+        AND jumlah > 0 LIMIT 1
+    ");
+    $_SESSION['notifikasi_item'] = 'Petunjuk aktif dari Insight Orb!';
     header("Location: quest_play.php?id_chapter=$id_chapter");
     exit;
 }
 
-// Proses jawaban atau lanjutkan
+// Gunakan Knowledge Scroll (tambah XP)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_scroll'])) {
+    mysqli_query($koneksi, "
+        UPDATE user_items SET jumlah = jumlah - 1 
+        WHERE id_user = $user_id 
+        AND id_item = (SELECT id_item FROM shop_items WHERE nama_item = 'Knowledge Scroll') 
+        AND jumlah > 0 LIMIT 1
+    ");
+    mysqli_query($koneksi, "UPDATE users SET xp = xp + 15 WHERE id_user = $user_id");
+    $_SESSION['notifikasi_item'] = '+15 XP dari Knowledge Scroll!';
+    header("Location: quest_play.php?id_chapter=$id_chapter");
+    exit;
+}
+
+// Gunakan Portal Pass (lewati soal)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_portal'])) {
+    mysqli_query($koneksi, "
+        UPDATE user_items SET jumlah = jumlah - 1 
+        WHERE id_user = $user_id 
+        AND id_item = (SELECT id_item FROM shop_items WHERE nama_item = 'Portal Pass') 
+        AND jumlah > 0 LIMIT 1
+    ");
+    $_SESSION['question_data']['index']++;
+    $_SESSION['notifikasi_item'] = 'Satu soal dilewati dengan Portal Pass!';
+    header("Location: quest_play.php?id_chapter=$id_chapter");
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $index = $_SESSION['question_data']['index'];
 
@@ -71,14 +98,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['lanjutkan'])) {
         $_SESSION['question_data']['index']++;
+        $_SESSION['question_data']['use_hint'] = false;
         header("Location: quest_play.php?id_chapter=$id_chapter");
         exit;
     }
 }
 
 $current_index = $_SESSION['question_data']['index'];
-
-// ✅ Redirect jika soal sudah habis
 if ($current_index >= $total_questions) {
     header("Location: quest_result.php?id_chapter=$id_chapter");
     exit;
@@ -87,11 +113,22 @@ if ($current_index >= $total_questions) {
 $current_question = $questions[$current_index] ?? null;
 $feedback = $_SESSION['question_data']['feedback'][$current_index] ?? null;
 $current_answer = $_SESSION['question_data']['answers'][$current_index] ?? null;
+
+// Ambil item
+$item_query = mysqli_query($koneksi, "
+    SELECT si.*, ui.jumlah 
+    FROM user_items ui 
+    JOIN shop_items si ON ui.id_item = si.id_item 
+    WHERE ui.id_user = $user_id AND ui.jumlah > 0
+");
+$user_items = [];
+while ($row = mysqli_fetch_assoc($item_query)) {
+    $user_items[] = $row;
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <title>Kerjakan Quest</title>
@@ -183,7 +220,8 @@ $current_answer = $_SESSION['question_data']['answers'][$current_index] ?? null;
         }
 
         .alert-info,
-        .alert-warning {
+        .alert-warning,
+        .alert-success {
             background-color: #f3e7c3;
             border-color: #c2a962;
             color: #3e3214;
@@ -191,57 +229,109 @@ $current_answer = $_SESSION['question_data']['answers'][$current_index] ?? null;
         }
     </style>
 </head>
-
 <body>
-    <?php include 'includes/navbar.php'; ?>
-    <div class="container mt-5">
-        <div class="quest-card">
-            <div class="card-body">
-                <h5 class="card-title">Soal <?= $current_index + 1 ?> dari <?= $total_questions ?></h5>
-                <p class="question-text"><?= htmlspecialchars($current_question['pertanyaan']) ?></p>
+<?php include 'includes/navbar.php'; ?>
+<div class="container mt-5">
+    <div class="quest-card">
+        <div class="card-body">
+            <div class="text-end">
+                <button class="btn btn-sm btn-dark mb-3" data-bs-toggle="modal" data-bs-target="#modalItem">🎒 Lihat Item</button>
+            </div>
 
-                <?php if (!$has_magnifying): ?>
-                    <div class="alert alert-warning">Kamu tidak punya item <strong>Magnifying Glass</strong>.</div>
-                <?php elseif (!$_SESSION['question_data']['use_magnifying']): ?>
-                    <form method="POST" class="mb-3">
-                        <button type="submit" name="use_magnifying" class="btn btn-warning">🔍 Gunakan Magnifying Glass</button>
-                    </form>
-                <?php elseif (!empty($current_question['petunjuk'])): ?>
-                    <div class="alert alert-info"><strong>Petunjuk:</strong> <?= htmlspecialchars($current_question['petunjuk']) ?></div>
-                <?php endif; ?>
+            <?php if (isset($_SESSION['notifikasi_item'])): ?>
+                <div class="alert alert-success text-center">
+                    <?= $_SESSION['notifikasi_item']; unset($_SESSION['notifikasi_item']); ?>
+                </div>
+            <?php endif; ?>
 
-                <?php if ($feedback && !$feedback['benar'] && !empty($feedback['petunjuk'])): ?>
-                    <div class="alert alert-info"><strong>Petunjuk:</strong> <?= htmlspecialchars($feedback['petunjuk']) ?></div>
-                <?php endif; ?>
+            <h5 class="card-title">Soal <?= $current_index + 1 ?> dari <?= $total_questions ?></h5>
+            <p class="question-text"><?= htmlspecialchars($current_question['pertanyaan']) ?></p>
 
-                <form method="POST" id="form-jawaban">
-                    <div class="choice-grid">
-                        <?php foreach (['a', 'b', 'c', 'd'] as $opt): ?>
-                            <?php
-                            $kelas = '';
-                            if ($current_answer === $opt && $feedback) {
-                                $kelas = $feedback['benar'] ? 'bg-success' : 'bg-danger';
-                            }
-                            ?>
-                            <label>
-                                <input type="radio" name="jawaban" id="jawaban_<?= $opt ?>" value="<?= $opt ?>" required onchange="this.form.submit();">
-                                <div class="choice-card <?= $kelas ?>">
-                                    <?= htmlspecialchars($current_question["pilihan_$opt"]) ?>
-                                </div>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
+            <?php if ($_SESSION['question_data']['use_hint'] && !empty($current_question['petunjuk'])): ?>
+                <div class="alert alert-info"><strong>Petunjuk:</strong> <?= htmlspecialchars($current_question['petunjuk']) ?></div>
+            <?php endif; ?>
+
+            <?php if ($feedback && !$feedback['benar'] && !empty($feedback['petunjuk'])): ?>
+                <div class="alert alert-info"><strong>Petunjuk:</strong> <?= htmlspecialchars($feedback['petunjuk']) ?></div>
+            <?php endif; ?>
+
+            <form method="POST" id="form-jawaban">
+                <div class="choice-grid">
+                    <?php foreach (['a', 'b', 'c', 'd'] as $opt): ?>
+                        <?php
+                        $kelas = '';
+                        if ($current_answer === $opt && $feedback) {
+                            $kelas = $feedback['benar'] ? 'bg-success' : 'bg-danger';
+                        }
+                        ?>
+                        <label>
+                            <input type="radio" name="jawaban" value="<?= $opt ?>" required onchange="this.form.submit();">
+                            <div class="choice-card <?= $kelas ?>">
+                                <?= htmlspecialchars($current_question["pilihan_$opt"]) ?>
+                            </div>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </form>
+
+            <?php if ($feedback && !$feedback['benar']): ?>
+                <form method="POST" class="text-center mt-3">
+                    <button type="submit" name="lanjutkan" class="btn btn-primary">Lanjutkan ➡️</button>
                 </form>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
 
-                <?php if ($feedback && !$feedback['benar']): ?>
-                    <form method="POST" class="text-center mt-3">
-                        <button type="submit" name="lanjutkan" class="btn btn-primary">Lanjutkan ➡️</button>
-                    </form>
-                <?php endif; ?>
+<!-- Modal Item -->
+<div class="modal fade" id="modalItem" tabindex="-1" aria-labelledby="modalItemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-subtle">
+                <h5 class="modal-title">🎒 Daftar Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <?php if (empty($user_items)): ?>
+                        <div class="col-12 text-center text-muted">Kamu belum punya item apapun.</div>
+                    <?php else: ?>
+                        <?php foreach ($user_items as $item): ?>
+                            <div class="col-md-4">
+                                <div class="border rounded p-3 bg-light h-100 text-center">
+                                    <img src="../assets/images/<?= $item['file_icon'] ?>" height="40"><br>
+                                    <strong><?= $item['nama_item'] ?></strong>
+                                    <p class="small mb-1"><?= $item['deskripsi'] ?></p>
+                                    <p class="small text-muted">Jumlah: <?= $item['jumlah'] ?></p>
+
+                                    <?php if ($item['nama_item'] === 'Insight Orb' && !$_SESSION['question_data']['use_hint']): ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="use_insight_orb" value="1">
+                                            <button class="btn btn-sm btn-warning">Gunakan</button>
+                                        </form>
+                                    <?php elseif ($item['nama_item'] === 'Knowledge Scroll'): ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="use_scroll" value="1">
+                                            <button class="btn btn-sm btn-success">+15 XP</button>
+                                        </form>
+                                    <?php elseif ($item['nama_item'] === 'Portal Pass'): ?>
+                                        <form method="POST">
+                                            <input type="hidden" name="use_portal" value="1">
+                                            <button class="btn btn-sm btn-primary">Lewati Soal</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <button class="btn btn-sm btn-secondary" disabled>⛔ Tidak dapat digunakan</button>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>
