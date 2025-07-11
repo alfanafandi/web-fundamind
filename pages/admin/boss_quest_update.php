@@ -26,7 +26,7 @@ if (!$boss) die("Data boss quest tidak ditemukan.");
         <div class="flex-1 p-8">
             <h2 class="text-2xl font-bold mb-4 text-gray-800">Edit Boss Quest</h2>
 
-            <form action="index.php?modul=boss_quest&fitur=edit&id=<?php echo $boss['id_boss']; ?>" method="POST" class="bg-white p-6 rounded shadow-md w-full max-w-xl">
+            <form action="index.php?modul=boss_quest&fitur=edit&id=<?php echo $boss['id_boss']; ?>" method="POST" enctype="multipart/form-data" class="bg-white p-6 rounded shadow-md w-full max-w-xl">
                 <div class="mb-4">
                     <label for="id_quest" class="block text-gray-700 font-semibold mb-1">ID Quest</label>
                     <input type="number" name="id_quest" id="id_quest" class="w-full p-2 border border-gray-300 rounded" required value="<?php echo $boss['id_quest']; ?>">
@@ -48,12 +48,24 @@ if (!$boss) die("Data boss quest tidak ditemukan.");
                     <textarea name="deskripsi_boss" id="deskripsi_boss" rows="3" class="w-full p-2 border border-gray-300 rounded"><?php echo htmlspecialchars($boss['deskripsi_boss']); ?></textarea>
                 </div>
                 <div class="mb-4">
-                    <label for="background_image" class="block text-gray-700 font-semibold mb-1">Nama File Background Image</label>
-                    <input type="text" name="background_image" id="background_image" class="w-full p-2 border border-gray-300 rounded" value="<?php echo htmlspecialchars($boss['background_image']); ?>">
+                    <label for="background_image" class="block text-gray-700 font-semibold mb-1">Upload Background Image</label>
+                    <input type="file" name="background_image" id="background_image" accept="image/png, image/jpeg, image/jpg" class="w-full p-2 border border-gray-300 rounded">
+                    <?php if (!empty($boss['background_image'])): ?>
+                        <div class="mt-2">
+                            <span class="text-xs text-gray-500">Background saat ini:</span><br>
+                            <img src="assets/images/<?php echo htmlspecialchars($boss['background_image']); ?>" alt="bg" class="h-12">
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="mb-4">
-                    <label for="boss_image" class="block text-gray-700 font-semibold mb-1">Nama File Boss Image</label>
-                    <input type="text" name="boss_image" id="boss_image" class="w-full p-2 border border-gray-300 rounded" value="<?php echo htmlspecialchars($boss['boss_image']); ?>">
+                    <label for="boss_image" class="block text-gray-700 font-semibold mb-1">Upload Boss Image</label>
+                    <input type="file" name="boss_image" id="boss_image" accept="image/png, image/jpeg, image/jpg" class="w-full p-2 border border-gray-300 rounded">
+                    <?php if (!empty($boss['boss_image'])): ?>
+                        <div class="mt-2">
+                            <span class="text-xs text-gray-500">Boss Image saat ini:</span><br>
+                            <img src="assets/images/<?php echo htmlspecialchars($boss['boss_image']); ?>" alt="boss" class="h-12">
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div class="mb-4">
                     <label for="xp_reward" class="block text-gray-700 font-semibold mb-1">XP Reward</label>

@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$quest_id = $_GET['id'] ?? $_GET['id_quest'] ?? 0; // support dari dua sumber
+$quest_id = $_GET['id'] ?? $_GET['id_quest'] ?? 0;
 
 // Ambil info quest
 $quest_result = mysqli_query($koneksi, "SELECT * FROM quests WHERE id_quest = $quest_id LIMIT 1");
@@ -45,7 +45,6 @@ mysqli_data_seek($chapters, 0); // reset lagi sebelum ditampilkan
 ?>
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <title>Pilih Chapter - <?= htmlspecialchars($quest['judul']) ?></title>
@@ -55,8 +54,6 @@ mysqli_data_seek($chapters, 0); // reset lagi sebelum ditampilkan
         @font-face {
             font-family: "PixelifySans";
             src: url("../assets/fonts/PixelifySans-VariableFont_wght.ttf") format("truetype");
-            font-weight: normal;
-            font-style: normal;
         }
 
         body {
@@ -119,58 +116,59 @@ mysqli_data_seek($chapters, 0); // reset lagi sebelum ditampilkan
 </head>
 
 <body>
-    <?php include 'includes/navbar.php'; ?>
+<?php include 'includes/navbar.php'; ?>
 
-    <div class="container mt-5">
-        <div class="scroll-box">
-            <h2 class="mb-4">Quest: <?= htmlspecialchars($quest['judul']) ?></h2>
+<div class="container mt-5">
+    <div class="scroll-box">
+        <h2 class="mb-4">Quest: <?= htmlspecialchars($quest['judul']) ?></h2>
 
-            <div class="list-group">
-                <?php
-                $chapter_index = 0;
-                $next_chapter_found = false;
+        <div class="list-group">
+            <?php
+            $chapter_index = 0;
+            $next_chapter_found = false;
 
-                while ($chapter = mysqli_fetch_assoc($chapters)):
-                    $chapter_index++;
-                    $chapter_id = $chapter['id_chapter'];
-                    $user_progress = $progress_data[$chapter_id] ?? null;
-                    $is_done = $user_progress && $user_progress['sudah_selesai'] == 1;
-                ?>
-                    <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <h5 class="mb-1">Chapter <?= $chapter_index ?>: <?= htmlspecialchars($chapter['judul_chapter']) ?></h5>
-                            <small>Status: <?= $is_done ? '✅ Sudah dikerjakan' : '🕓 Belum dikerjakan' ?></small><br>
-                            <?php if ($is_done): ?>
-                                <small>Nilai: <?= $user_progress['nilai'] ?> / 100</small><br>
-                            <?php endif; ?>
-                            <small>Reward: ⭐ <?= $chapter['xp_reward'] ?> XP, 💰 <?= $chapter['coin_reward'] ?> Koin</small>
-                        </div>
-                        <div>
-                            <?php if (!$is_done && !$next_chapter_found && !$all_done): ?>
-                                <a href="quest_play.php?id_chapter=<?= $chapter_id ?>" class="btn btn-primary">▶️ Lanjutkan</a>
-                                <?php $next_chapter_found = true; ?>
-                            <?php elseif ($is_done): ?>
-                                <a href="quest_result.php?id_chapter=<?= $chapter_id ?>" class="btn btn-outline-secondary">📜 Lihat Hasil</a>
-                            <?php else: ?>
-                                <button class="btn btn-secondary" disabled>🔒 Belum Dibuka</button>
-                            <?php endif; ?>
-                        </div>
+            while ($chapter = mysqli_fetch_assoc($chapters)):
+                $chapter_index++;
+                $chapter_id = $chapter['id_chapter'];
+                $user_progress = $progress_data[$chapter_id] ?? null;
+                $is_done = $user_progress && $user_progress['sudah_selesai'] == 1;
+            ?>
+                <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <h5 class="mb-1">Chapter <?= $chapter_index ?>: <?= htmlspecialchars($chapter['judul_chapter']) ?></h5>
+                        <small>Status: <?= $is_done ? '✅ Sudah dikerjakan' : '🕓 Belum dikerjakan' ?></small><br>
+                        <?php if ($is_done): ?>
+                            <small>Nilai: <?= $user_progress['nilai'] ?> / 100</small><br>
+                        <?php endif; ?>
+                        <small>Reward: ⭐ <?= $chapter['xp_reward'] ?> XP, 💰 <?= $chapter['coin_reward'] ?> Koin</small>
                     </div>
-                <?php endwhile; ?>
-            </div>
-
-            <?php if ($all_done): ?>
-                <div class="alert alert-success mt-4 text-center">
-                    🎉 <strong>Selamat!</strong> Kamu telah menyelesaikan semua chapter dalam quest ini!
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <?php if (!$is_done && !$next_chapter_found && !$all_done): ?>
+                            <a href="quest_play.php?id_chapter=<?= $chapter_id ?>" class="btn btn-primary">▶️ Lanjutkan</a>
+                            <?php $next_chapter_found = true; ?>
+                        <?php elseif ($is_done): ?>
+                            <a href="quest_result.php?id_chapter=<?= $chapter_id ?>" class="btn btn-outline-secondary">📜 Lihat Hasil</a>
+                            <a href="quest_play.php?id_chapter=<?= $chapter_id ?>&replay=1" class="btn btn-primary">🔁 Ulangi</a>
+                        <?php else: ?>
+                            <button class="btn btn-secondary" disabled>🔒 Belum Dibuka</button>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            <?php endif; ?>
+            <?php endwhile; ?>
+        </div>
 
-            <div class="mt-4">
-                <a href="quest_box.php" class="btn btn-outline-secondary">← Kembali ke Kotak Quest</a>
+        <?php if ($all_done): ?>
+            <div class="alert alert-success mt-4 text-center">
+                🎉 <strong>Selamat!</strong> Kamu telah menyelesaikan semua chapter dalam quest ini!
             </div>
+        <?php endif; ?>
+
+        <div class="mt-4">
+            <a href="quest_box.php" class="btn btn-outline-secondary">← Kembali ke Kotak Quest</a>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>

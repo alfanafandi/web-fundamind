@@ -26,10 +26,9 @@ class QuestQuestionModel {
         $jawaban_benar = mysqli_real_escape_string($this->conn, $data['jawaban_benar']);
         $petunjuk = mysqli_real_escape_string($this->conn, $data['petunjuk']);
         $min_level = (int)$data['min_level'];
-        $kategori = mysqli_real_escape_string($this->conn, $data['kategori']);
 
-        $sql = "INSERT INTO quest_questions (pertanyaan, pilihan_a, pilihan_b, pilihan_c, pilihan_d, jawaban_benar, petunjuk, min_level, kategori)
-                VALUES ('$pertanyaan', '$pilihan_a', '$pilihan_b', '$pilihan_c', '$pilihan_d', '$jawaban_benar', '$petunjuk', $min_level, '$kategori')";
+        $sql = "INSERT INTO quest_questions (pertanyaan, pilihan_a, pilihan_b, pilihan_c, pilihan_d, jawaban_benar, petunjuk, min_level)
+                VALUES ('$pertanyaan', '$pilihan_a', '$pilihan_b', '$pilihan_c', '$pilihan_d', '$jawaban_benar', '$petunjuk', $min_level)";
         return mysqli_query($this->conn, $sql);
     }
 
@@ -43,7 +42,6 @@ class QuestQuestionModel {
         $jawaban_benar = mysqli_real_escape_string($this->conn, $data['jawaban_benar']);
         $petunjuk = mysqli_real_escape_string($this->conn, $data['petunjuk']);
         $min_level = (int)$data['min_level'];
-        $kategori = mysqli_real_escape_string($this->conn, $data['kategori']);
 
         $sql = "UPDATE quest_questions SET 
                     pertanyaan = '$pertanyaan',
@@ -54,7 +52,6 @@ class QuestQuestionModel {
                     jawaban_benar = '$jawaban_benar',
                     petunjuk = '$petunjuk',
                     min_level = $min_level,
-                    kategori = '$kategori'
                 WHERE id_question = $id";
         return mysqli_query($this->conn, $sql);
     }

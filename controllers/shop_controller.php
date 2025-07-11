@@ -18,6 +18,22 @@ class ShopController {
 
             case 'create':
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Proses upload file gambar
+                    if (isset($_FILES['file_icon']) && $_FILES['file_icon']['error'] === UPLOAD_ERR_OK) {
+                        $uploadDir = 'assets/images/';
+                        $ext = strtolower(pathinfo($_FILES['file_icon']['name'], PATHINFO_EXTENSION));
+                        $allowed = ['png', 'jpg', 'jpeg'];
+                        if (in_array($ext, $allowed)) {
+                            $filename = uniqid('icon_', true) . '.' . $ext;
+                            $targetPath = $uploadDir . $filename;
+                            move_uploaded_file($_FILES['file_icon']['tmp_name'], $targetPath);
+                            $_POST['file_icon'] = $filename;
+                        } else {
+                            $_POST['file_icon'] = 'default-avatar.png'; // fallback
+                        }
+                    } else {
+                        $_POST['file_icon'] = 'default-avatar.png'; // fallback
+                    }
                     $this->model->create($_POST);
                     header('Location: index.php?modul=shop&fitur=list');
                     exit;
@@ -29,6 +45,22 @@ class ShopController {
                 $id = $_GET['id'] ?? 0;
                 $item = $this->model->getById($id);
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Proses upload file gambar saat edit
+                    if (isset($_FILES['file_icon']) && $_FILES['file_icon']['error'] === UPLOAD_ERR_OK) {
+                        $uploadDir = 'assets/images/';
+                        $ext = strtolower(pathinfo($_FILES['file_icon']['name'], PATHINFO_EXTENSION));
+                        $allowed = ['png', 'jpg', 'jpeg'];
+                        if (in_array($ext, $allowed)) {
+                            $filename = uniqid('icon_', true) . '.' . $ext;
+                            $targetPath = $uploadDir . $filename;
+                            move_uploaded_file($_FILES['file_icon']['tmp_name'], $targetPath);
+                            $_POST['file_icon'] = $filename;
+                        } else {
+                            $_POST['file_icon'] = $item['file_icon'];
+                        }
+                    } else {
+                        $_POST['file_icon'] = $item['file_icon'];
+                    }
                     $this->model->update($id, $_POST);
                     header('Location: index.php?modul=shop&fitur=list');
                     exit;

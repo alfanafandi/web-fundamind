@@ -15,6 +15,35 @@ if (!isset($_GET['id'])) {
 $id_quest = $_GET['id'];
 $user_id = $_SESSION['user_id'];
 
+// Ambil data user
+$user = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT level FROM users WHERE id_user = $user_id"));
+$level = $user['level'] ?? 1;
+
+// Tentukan rank berdasarkan level
+$rank = 'Bronze';
+if ($level >= 20) $rank = 'Diamond';
+elseif ($level >= 15) $rank = 'Platinum';
+elseif ($level >= 10) $rank = 'Gold';
+elseif ($level >= 5) $rank = 'Silver';
+
+// Ambil rank yang dipilih, default ke rank user
+$available_ranks = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+$current_rank = $_GET['rank'] ?? $rank;
+if (!in_array($current_rank, $available_ranks)) {
+    $current_rank = $rank;
+}
+
+// Range level berdasarkan rank
+$rank_ranges = [
+    'Bronze' => [0, 4],
+    'Silver' => [5, 9],
+    'Gold' => [10, 14],
+    'Platinum' => [15, 19],
+    'Diamond' => [20, 999]
+];
+$min_level = $rank_ranges[$current_rank][0];
+$max_level = $rank_ranges[$current_rank][1];
+
 // Ambil quest terkait
 $quest = mysqli_query($koneksi, "SELECT * FROM quests WHERE id_quest = $id_quest AND kategori = 'challenge'");
 $data_quest = mysqli_fetch_assoc($quest);
@@ -23,13 +52,16 @@ if (!$data_quest) {
     exit;
 }
 
-// Ambil leaderboard top 10
-$query = "SELECT users.username, MAX(challenge_scores.score) AS score 
-          FROM challenge_scores 
-          JOIN users ON challenge_scores.id_user = users.id_user 
-          GROUP BY challenge_scores.id_user 
-          ORDER BY score DESC 
-          LIMIT 10";
+// Ambil leaderboard
+$query = "
+    SELECT u.username, MAX(s.score) AS score 
+    FROM challenge_scores s
+    JOIN users u ON s.id_user = u.id_user
+    WHERE u.level BETWEEN $min_level AND $max_level
+    GROUP BY s.id_user
+    ORDER BY score DESC
+    LIMIT 10
+";
 $result = mysqli_query($koneksi, $query);
 ?>
 
@@ -71,6 +103,26 @@ $result = mysqli_query($koneksi, $query);
             text-shadow: 1px 1px 2px #000;
         }
 
+        .btn-rank {
+            border: 2px solid #fff3cd;
+            background-color: #f7e8c3;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: #3a270d;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: 0.2s;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-rank.active,
+        .btn-rank:hover {
+            background-color: #ffe39f;
+            border-color: #ffc107;
+        }
+
         .btn-start {
             background-color: #f4c542;
             color: #3a270d;
@@ -80,7 +132,7 @@ $result = mysqli_query($koneksi, $query);
             border: 3px solid #b38728;
             font-size: 1.1rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         .btn-start:hover {
@@ -100,7 +152,8 @@ $result = mysqli_query($koneksi, $query);
             color: #3a270d;
         }
 
-        td, th {
+        td,
+        th {
             padding: 12px;
             border: 1px solid #d9ba66;
         }
@@ -113,7 +166,13 @@ $result = mysqli_query($koneksi, $query);
         <h2 class="fw-bold mb-4"><?= htmlspecialchars($data_quest['judul']); ?></h2>
         <p class="mb-4"><?= htmlspecialchars($data_quest['deskripsi']); ?></p>
 
-        <h4 class="mb-3">🏆 Top 10 Papan Skor</h4>
+        <div class="mb-4">
+            <?php foreach ($available_ranks as $r): ?>
+                <a href="?id=<?= $id_quest ?>&rank=<?= $r ?>" class="btn-rank <?= $r === $current_rank ? 'active' : '' ?>"><?= $r ?></a>
+            <?php endforeach; ?>
+        </div>
+
+        <h4 class="mb-3">🏆 Top 10 Papan Skor Rank <u><?= $current_rank ?></u></h4>
         <div class="table-responsive">
             <table class="table">
                 <thead>
@@ -125,16 +184,16 @@ $result = mysqli_query($koneksi, $query);
                 </thead>
                 <tbody>
                     <?php
-                    $rank = 1;
+                    $rank_no = 1;
                     while ($row = mysqli_fetch_assoc($result)) {
                         echo "<tr>";
-                        echo "<td>{$rank}</td>";
+                        echo "<td>{$rank_no}</td>";
                         echo "<td>" . htmlspecialchars($row['username']) . "</td>";
                         echo "<td>" . $row['score'] . "</td>";
                         echo "</tr>";
-                        $rank++;
+                        $rank_no++;
                     }
-                    if ($rank === 1) {
+                    if ($rank_no === 1) {
                         echo "<tr><td colspan='3'>Belum ada skor tercatat.</td></tr>";
                     }
                     ?>

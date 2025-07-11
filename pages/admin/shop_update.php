@@ -23,11 +23,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipe_item = $_POST['tipe_item'];
     $deskripsi = $_POST['deskripsi'];
     $harga_coin = (int)$_POST['harga_coin'];
-    $file_icon = $_POST['file_icon'];
-    $efek = $_POST['efek'];
     $tersedia = isset($_POST['tersedia']) ? 1 : 0;
 
-    $update = "UPDATE items SET 
+    // Proses upload file icon jika ada file baru
+    if (isset($_FILES['file_icon']) && $_FILES['file_icon']['error'] === UPLOAD_ERR_OK) {
+        $uploadDir = 'assets/images/';
+        $ext = strtolower(pathinfo($_FILES['file_icon']['name'], PATHINFO_EXTENSION));
+        $allowed = ['png', 'jpg', 'jpeg'];
+        if (in_array($ext, $allowed)) {
+            $filename = uniqid('icon_', true) . '.' . $ext;
+            $targetPath = $uploadDir . $filename;
+            move_uploaded_file($_FILES['file_icon']['tmp_name'], $targetPath);
+            $file_icon = $filename;
+        } else {
+            $file_icon = $item['file_icon'];
+        }
+    } else {
+        $file_icon = $item['file_icon'];
+    }
+
+    $update = "UPDATE shop_items SET 
         nama_item='$nama_item',
         tipe_item='$tipe_item',
         deskripsi='$deskripsi',
@@ -66,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="text-red-600 mb-4"><?php echo $error; ?></div>
             <?php endif; ?>
 
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <!-- Nama Item -->
                 <div class="mb-4">
                     <label for="nama_item" class="block text-gray-700 text-sm font-bold mb-2">Nama Item</label>
@@ -102,10 +117,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- File Icon -->
                 <div class="mb-4">
-                    <label for="file_icon" class="block text-gray-700 text-sm font-bold mb-2">File Icon (contoh: clue.png)</label>
-                    <input type="text" id="file_icon" name="file_icon"
-                           value="<?php echo htmlspecialchars($item['file_icon']); ?>"
+                    <label for="file_icon" class="block text-gray-700 text-sm font-bold mb-2">Upload Icon (PNG/JPG/JPEG)</label>
+                    <input type="file" id="file_icon" name="file_icon" accept="image/png, image/jpeg, image/jpg"
                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight">
+                    <?php if (!empty($item['file_icon'])): ?>
+                        <div class="mt-2">
+                            <span class="text-xs text-gray-500">Icon saat ini:</span><br>
+                            <img src="assets/images/<?php echo htmlspecialchars($item['file_icon']); ?>" alt="icon" class="h-12">
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Tersedia -->
@@ -133,5 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+</body>
+</html>
 </body>
 </html>

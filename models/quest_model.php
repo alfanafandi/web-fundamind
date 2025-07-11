@@ -42,6 +42,7 @@ class QuestModel {
     public function update($id, $data) {
         $id          = (int)$id;
         $judul       = mysqli_real_escape_string($this->conn, $data['judul']);
+        $deskripsi = mysqli_real_escape_string($this->conn, $data['deskripsi']);
         $kategori    = mysqli_real_escape_string($this->conn, $data['kategori']);
         $xp_reward   = (int)$data['xp_reward'];
         $coin_reward = (int)$data['coin_reward'];
@@ -50,6 +51,7 @@ class QuestModel {
 
         $query = "UPDATE quests SET 
                     judul       = '$judul',
+                    deskripsi   = '$deskripsi',
                     kategori    = '$kategori',
                     xp_reward   = $xp_reward,
                     coin_reward = $coin_reward,

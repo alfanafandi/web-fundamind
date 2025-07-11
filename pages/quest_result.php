@@ -9,16 +9,32 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 $id_chapter = $_GET['id_chapter'] ?? 0;
+$is_replay = isset($_GET['replay']) && $_GET['replay'] == 1;
+$session_key = $is_replay ? 'question_data_replay' : 'question_data';
 
-// Jika ada sesi jawaban, lakukan penilaian sekarang
-if (isset($_SESSION['question_data']) && $_SESSION['question_data']['id_chapter'] == $id_chapter) {
-    $question_data = $_SESSION['question_data'];
+$question_data = $_SESSION[$session_key] ?? null;
+$nilai = 0;
+$xp_real = 0;
+$coin_real = 0;
 
+// Ambil data reward chapter
+$chapter_info = mysqli_fetch_assoc(mysqli_query($koneksi, "
+    SELECT id_quest, xp_reward, coin_reward 
+    FROM quest_chapters 
+    WHERE id_chapter = $id_chapter
+"));
+$id_progress = $chapter_info['id_quest'] ?? 0;
+$xp_reward = $chapter_info['xp_reward'] ?? 0;
+$coin_reward = $chapter_info['coin_reward'] ?? 0;
+
+if ($question_data && $question_data['id_chapter'] == $id_chapter) {
+    // Proses penilaian
     $result = mysqli_query($koneksi, "SELECT * FROM quest_questions WHERE id_chapter = $id_chapter ORDER BY id_question ASC");
     $questions = [];
     while ($row = mysqli_fetch_assoc($result)) {
         $questions[] = $row;
     }
+
     $total_questions = count($questions);
     $benar = 0;
 
@@ -26,91 +42,76 @@ if (isset($_SESSION['question_data']) && $_SESSION['question_data']['id_chapter'
         $id_q = $q['id_question'];
         $user_answer = strtolower($question_data['answers'][$i] ?? '');
         $correct_answer = strtolower($q['jawaban_benar']);
-
         if ($user_answer === $correct_answer) $benar++;
 
+        // Tetap simpan jawaban
         mysqli_query($koneksi, "REPLACE INTO user_answers 
             (id_user, id_chapter, id_question, jawaban_user) 
             VALUES ($user_id, $id_chapter, $id_q, '$user_answer')");
     }
 
-    $nilai = round(($benar / $total_questions) * 100);
+    $nilai = round(($benar / max(1, $total_questions)) * 100);
+    $xp_min = 20;
+    $xp_real = max($xp_min, round($xp_reward * ($benar / max(1, $total_questions))));
+    $coin_real = floor($coin_reward * ($benar / max(1, $total_questions)));
 
-    // Ambil id_progress (id_quest) dan reward chapter
-    $chapter_info = mysqli_fetch_assoc(mysqli_query($koneksi, "
-        SELECT id_quest, xp_reward, coin_reward 
-        FROM quest_chapters 
-        WHERE id_chapter = $id_chapter
-    "));
-    $id_progress = $chapter_info['id_quest'];
-    $xp_reward = $chapter_info['xp_reward'] ?? 0;
-    $coin_reward = $chapter_info['coin_reward'] ?? 0;
+    // Jika replay, kurangi reward
+    if ($is_replay) {
+        $xp_real = floor($xp_real * 0.5);
+        $coin_real = floor($coin_real * 0.5);
+    }
 
-    // Tambahkan XP & Coin ke users
+    // Tambahkan ke akun
     mysqli_query($koneksi, "
-        UPDATE users 
-        SET xp = xp + $xp_reward, coin = coin + $coin_reward 
-        WHERE id_user = $user_id
+        UPDATE users SET xp = xp + $xp_real, coin = coin + $coin_real WHERE id_user = $user_id
     ");
 
-    // Cek dan naikkan level jika memenuhi
-    $user_info = mysqli_fetch_assoc(mysqli_query($koneksi, "
-        SELECT xp, level, xp_next FROM users WHERE id_user = $user_id
-    "));
-    $current_xp = $user_info['xp'];
-    $current_level = $user_info['level'];
+    // Cek level up
+    $user_info = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT xp, level, xp_next FROM users WHERE id_user = $user_id"));
+    $xp = $user_info['xp'];
+    $level = $user_info['level'];
     $xp_next = $user_info['xp_next'];
 
-    while ($current_xp >= $xp_next) {
-        $current_xp -= $xp_next;
-        $current_level++;
-        $xp_next = $current_level * 100;
+    while ($xp >= $xp_next) {
+        $xp -= $xp_next;
+        $level++;
+        $xp_next = $level * 100;
+        mysqli_query($koneksi, "UPDATE users SET level = $level, xp = $xp, xp_next = $xp_next WHERE id_user = $user_id");
+    }
 
+    // Simpan progress ke tabel progress utama hanya jika bukan replay
+    if (!$is_replay) {
+        $waktu_selesai = date('Y-m-d H:i:s');
         mysqli_query($koneksi, "
-            UPDATE users 
-            SET level = $current_level, xp = $current_xp, xp_next = $xp_next 
-            WHERE id_user = $user_id
+            INSERT INTO user_chapter_progress 
+            (id_progress, id_user, id_chapter, nilai, sudah_selesai, waktu_selesai, xp_didapat, coin_didapat)
+            VALUES 
+            ($id_progress, $user_id, $id_chapter, $nilai, 1, '$waktu_selesai', $xp_real, $coin_real)
+            ON DUPLICATE KEY UPDATE 
+                nilai = VALUES(nilai),
+                sudah_selesai = 1,
+                waktu_selesai = VALUES(waktu_selesai),
+                xp_didapat = VALUES(xp_didapat),
+                coin_didapat = VALUES(coin_didapat)
         ");
     }
 
-    // Simpan progress chapter
-    $waktu_selesai = date('Y-m-d H:i:s');
-    mysqli_query($koneksi, "
-        INSERT INTO user_chapter_progress 
-        (id_progress, id_user, id_chapter, nilai, sudah_selesai, waktu_selesai)
-        VALUES 
-        ($id_progress, $user_id, $id_chapter, $nilai, 1, '$waktu_selesai')
-        ON DUPLICATE KEY UPDATE 
-            nilai = VALUES(nilai),
-            sudah_selesai = 1,
-            waktu_selesai = VALUES(waktu_selesai)
-    ");
+    unset($_SESSION[$session_key]);
+} else {
+    // Ambil dari progress jika tidak sedang menjawab ulang
+    $progress = mysqli_fetch_assoc(mysqli_query($koneksi, "
+        SELECT * FROM user_chapter_progress 
+        WHERE id_user = $user_id AND id_chapter = $id_chapter
+    "));
+    if (!$progress) {
+        echo "<div class='alert alert-danger text-center mt-5'>Kamu belum menyelesaikan quest ini.</div>";
+        exit;
+    }
 
-    unset($_SESSION['question_data']);
+    $nilai = $progress['nilai'];
+    $xp_real = $progress['xp_didapat'];
+    $coin_real = $progress['coin_didapat'];
 }
-
-// Ambil data hasil
-$progress = mysqli_fetch_assoc(mysqli_query($koneksi, "
-    SELECT * FROM user_chapter_progress 
-    WHERE id_user = $user_id AND id_chapter = $id_chapter AND sudah_selesai = 1
-"));
-
-if (!$progress) {
-    echo "<div class='alert alert-danger text-center mt-5'>Kamu belum menyelesaikan chapter ini.</div>";
-    exit;
-}
-
-$nilai = $progress['nilai'];
-
-// Ambil reward XP dan Coin dari quest_chapters (lagi jika buka ulang)
-$chapter_info = mysqli_fetch_assoc(mysqli_query($koneksi, "
-    SELECT id_quest, xp_reward, coin_reward 
-    FROM quest_chapters 
-    WHERE id_chapter = $id_chapter
-"));
-$id_progress = $chapter_info['id_quest'];
-$xp_reward = $chapter_info['xp_reward'] ?? 0;
-$coin_reward = $chapter_info['coin_reward'] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -143,7 +144,7 @@ $coin_reward = $chapter_info['coin_reward'] ?? 0;
             padding: 40px;
             max-width: 720px;
             margin: 0 auto;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
             text-align: center;
         }
 
@@ -184,6 +185,7 @@ $coin_reward = $chapter_info['coin_reward'] ?? 0;
         }
     </style>
 </head>
+
 <body>
     <?php include 'includes/navbar.php'; ?>
 
@@ -191,7 +193,14 @@ $coin_reward = $chapter_info['coin_reward'] ?? 0;
         <div class="result-card mt-5">
             <h1>🎉 Hasil Quest</h1>
             <p class="score"><?= $nilai ?> / 100</p>
-            <p class="reward">+<?= $xp_reward ?> XP &nbsp; | &nbsp; +<?= $coin_reward ?> Coin</p>
+            <p class="reward">+<?= $xp_real ?> XP &nbsp; | &nbsp; +<?= $coin_real ?> Coin</p>
+
+            <?php if ($is_replay): ?>
+                <div class="alert alert-info mt-3">
+                    <strong>Replay Mode:</strong> XP dan Coin tetap diberikan namun dikurangi (50% dari reward awal).
+                </div>
+            <?php endif; ?>
+
             <a href="quest_chapter.php?id_quest=<?= $id_progress ?>" class="btn btn-custom mt-4">⬅️ Kembali ke Daftar Chapter</a>
         </div>
     </div>

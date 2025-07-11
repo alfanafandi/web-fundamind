@@ -56,7 +56,9 @@ while ($current_xp >= $xp_needed) {
 mysqli_query($koneksi, "UPDATE users SET level = $current_level, xp = $current_xp WHERE id_user = $user_id");
 
 // ✅ Simpan waktu challenge terakhir
-$_SESSION['last_challenge_date'] = date('Y-m-d');
+$today = date('Y-m-d');
+mysqli_query($koneksi, "UPDATE users SET last_challenge_date = '$today' WHERE id_user = $user_id");
+
 
 
 // ✅ Bersihkan sesi challenge

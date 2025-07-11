@@ -57,7 +57,7 @@ $result = mysqli_query($koneksi, $query);
                             <?php while ($quest = mysqli_fetch_assoc($result)) : ?>
                                 <tr class="border-b hover:bg-gray-50">
                                     <td class="px-2 py-3 text-center w-16">
-                                        <img src="<?php echo 'assets/images/' . htmlspecialchars($quest['gambar_icon']); ?>" alt="icon" class="h-10 mx-auto">
+                                        <img src="assets/images/<?php echo htmlspecialchars($quest['gambar_icon']); ?>" alt="icon" class="h-10 mx-auto">
                                     </td>
                                     <td class="px-2 py-3 w-40 max-w-xs truncate"><?php echo htmlspecialchars($quest['judul']); ?></td>
                                     <td class="px-2 py-3 w-32 max-w-xs truncate"><?php echo htmlspecialchars($quest['kategori']); ?></td>

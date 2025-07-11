@@ -9,7 +9,10 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 $id_chapter = $_GET['id_chapter'] ?? 0;
+$is_replay = isset($_GET['replay']) && $_GET['replay'] == 1;
+$session_key = $is_replay ? 'question_data_replay' : 'question_data';
 
+// Ambil semua soal untuk chapter ini
 $result = mysqli_query($koneksi, "SELECT * FROM quest_questions WHERE id_chapter = $id_chapter ORDER BY id_question ASC");
 $questions = [];
 while ($row = mysqli_fetch_assoc($result)) {
@@ -22,8 +25,9 @@ if ($total_questions === 0) {
     exit;
 }
 
-if (!isset($_SESSION['question_data']) || $_SESSION['question_data']['id_chapter'] != $id_chapter) {
-    $_SESSION['question_data'] = [
+// Inisialisasi session data soal
+if (!isset($_SESSION[$session_key]) || $_SESSION[$session_key]['id_chapter'] != $id_chapter) {
+    $_SESSION[$session_key] = [
         'index' => 0,
         'answers' => [],
         'use_hint' => false,
@@ -32,9 +36,9 @@ if (!isset($_SESSION['question_data']) || $_SESSION['question_data']['id_chapter
     ];
 }
 
-// Gunakan Insight Orb (petunjuk)
+// Gunakan Insight Orb
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_insight_orb'])) {
-    $_SESSION['question_data']['use_hint'] = true;
+    $_SESSION[$session_key]['use_hint'] = true;
     mysqli_query($koneksi, "
         UPDATE user_items SET jumlah = jumlah - 1 
         WHERE id_user = $user_id 
@@ -42,11 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_insight_orb'])) {
         AND jumlah > 0 LIMIT 1
     ");
     $_SESSION['notifikasi_item'] = 'Petunjuk aktif dari Insight Orb!';
-    header("Location: quest_play.php?id_chapter=$id_chapter");
+    header("Location: quest_play.php?id_chapter=$id_chapter" . ($is_replay ? "&replay=1" : ""));
     exit;
 }
 
-// Gunakan Knowledge Scroll (tambah XP)
+// Gunakan Knowledge Scroll
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_scroll'])) {
     mysqli_query($koneksi, "
         UPDATE user_items SET jumlah = jumlah - 1 
@@ -56,11 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_scroll'])) {
     ");
     mysqli_query($koneksi, "UPDATE users SET xp = xp + 15 WHERE id_user = $user_id");
     $_SESSION['notifikasi_item'] = '+15 XP dari Knowledge Scroll!';
-    header("Location: quest_play.php?id_chapter=$id_chapter");
+    header("Location: quest_play.php?id_chapter=$id_chapter" . ($is_replay ? "&replay=1" : ""));
     exit;
 }
 
-// Gunakan Portal Pass (lewati soal)
+// Gunakan Portal Pass
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_portal'])) {
     mysqli_query($koneksi, "
         UPDATE user_items SET jumlah = jumlah - 1 
@@ -68,53 +72,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['use_portal'])) {
         AND id_item = (SELECT id_item FROM shop_items WHERE nama_item = 'Portal Pass') 
         AND jumlah > 0 LIMIT 1
     ");
-    $_SESSION['question_data']['index']++;
+    $_SESSION[$session_key]['index']++;
     $_SESSION['notifikasi_item'] = 'Satu soal dilewati dengan Portal Pass!';
-    header("Location: quest_play.php?id_chapter=$id_chapter");
+    header("Location: quest_play.php?id_chapter=$id_chapter" . ($is_replay ? "&replay=1" : ""));
     exit;
 }
 
+// Proses jawaban
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $index = $_SESSION['question_data']['index'];
+    $index = $_SESSION[$session_key]['index'];
 
     if (isset($_POST['jawaban'])) {
         $jawaban = strtolower($_POST['jawaban']);
-        $_SESSION['question_data']['answers'][$index] = $jawaban;
+        $_SESSION[$session_key]['answers'][$index] = $jawaban;
 
         $correct_answer = strtolower($questions[$index]['jawaban_benar']);
         $benar = $jawaban === $correct_answer;
 
-        $_SESSION['question_data']['feedback'][$index] = [
+        $_SESSION[$session_key]['feedback'][$index] = [
             'benar' => $benar,
             'petunjuk' => $questions[$index]['petunjuk'] ?? '',
         ];
 
         if ($benar) {
-            $_SESSION['question_data']['index']++;
-            header("Location: quest_play.php?id_chapter=$id_chapter");
+            $_SESSION[$session_key]['index']++;
+            header("Location: quest_play.php?id_chapter=$id_chapter" . ($is_replay ? "&replay=1" : ""));
             exit;
         }
     }
 
     if (isset($_POST['lanjutkan'])) {
-        $_SESSION['question_data']['index']++;
-        $_SESSION['question_data']['use_hint'] = false;
-        header("Location: quest_play.php?id_chapter=$id_chapter");
+        $_SESSION[$session_key]['index']++;
+        $_SESSION[$session_key]['use_hint'] = false;
+        header("Location: quest_play.php?id_chapter=$id_chapter" . ($is_replay ? "&replay=1" : ""));
         exit;
     }
 }
 
-$current_index = $_SESSION['question_data']['index'];
+// Cek apakah soal habis
+$current_index = $_SESSION[$session_key]['index'];
 if ($current_index >= $total_questions) {
-    header("Location: quest_result.php?id_chapter=$id_chapter");
+    $redirect = "quest_result.php?id_chapter=$id_chapter";
+    if ($is_replay) $redirect .= "&replay=1";
+    header("Location: $redirect");
     exit;
 }
 
+// Ambil soal saat ini
 $current_question = $questions[$current_index] ?? null;
-$feedback = $_SESSION['question_data']['feedback'][$current_index] ?? null;
-$current_answer = $_SESSION['question_data']['answers'][$current_index] ?? null;
+$feedback = $_SESSION[$session_key]['feedback'][$current_index] ?? null;
+$current_answer = $_SESSION[$session_key]['answers'][$current_index] ?? null;
 
-// Ambil item
+// Ambil item user
 $item_query = mysqli_query($koneksi, "
     SELECT si.*, ui.jumlah 
     FROM user_items ui 
@@ -208,17 +217,6 @@ while ($row = mysqli_fetch_assoc($item_query)) {
             display: none;
         }
 
-        .btn-warning {
-            background-color: #d8a900;
-            border-color: #c59700;
-            color: #fff;
-            font-weight: bold;
-        }
-
-        .btn-warning:hover {
-            background-color: #c59700;
-        }
-
         .alert-info,
         .alert-warning,
         .alert-success {
@@ -231,6 +229,7 @@ while ($row = mysqli_fetch_assoc($item_query)) {
 </head>
 <body>
 <?php include 'includes/navbar.php'; ?>
+
 <div class="container mt-5">
     <div class="quest-card">
         <div class="card-body">
@@ -247,7 +246,7 @@ while ($row = mysqli_fetch_assoc($item_query)) {
             <h5 class="card-title">Soal <?= $current_index + 1 ?> dari <?= $total_questions ?></h5>
             <p class="question-text"><?= htmlspecialchars($current_question['pertanyaan']) ?></p>
 
-            <?php if ($_SESSION['question_data']['use_hint'] && !empty($current_question['petunjuk'])): ?>
+            <?php if ($_SESSION[$session_key]['use_hint'] && !empty($current_question['petunjuk'])): ?>
                 <div class="alert alert-info"><strong>Petunjuk:</strong> <?= htmlspecialchars($current_question['petunjuk']) ?></div>
             <?php endif; ?>
 
@@ -304,7 +303,7 @@ while ($row = mysqli_fetch_assoc($item_query)) {
                                     <p class="small mb-1"><?= $item['deskripsi'] ?></p>
                                     <p class="small text-muted">Jumlah: <?= $item['jumlah'] ?></p>
 
-                                    <?php if ($item['nama_item'] === 'Insight Orb' && !$_SESSION['question_data']['use_hint']): ?>
+                                    <?php if ($item['nama_item'] === 'Insight Orb' && !$_SESSION[$session_key]['use_hint']): ?>
                                         <form method="POST">
                                             <input type="hidden" name="use_insight_orb" value="1">
                                             <button class="btn btn-sm btn-warning">Gunakan</button>

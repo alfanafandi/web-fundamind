@@ -65,12 +65,12 @@ $result = mysqli_query($koneksi, $query);
                                 <td class="px-2 py-3 max-w-xs truncate"><?php echo htmlspecialchars($boss['deskripsi_boss']); ?></td>
                                 <td class="px-2 py-3 text-center">
                                     <?php if ($boss['background_image']): ?>
-                                        <img src="<?php echo 'assets/images/' . htmlspecialchars($boss['background_image']); ?>" alt="bg" class="h-10 mx-auto">
+                                        <img src="assets/images/<?php echo htmlspecialchars($boss['background_image']); ?>" alt="bg" class="h-10 mx-auto">
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-2 py-3 text-center">
                                     <?php if ($boss['boss_image']): ?>
-                                        <img src="<?php echo 'assets/images/' . htmlspecialchars($boss['boss_image']); ?>" alt="boss" class="h-10 mx-auto">
+                                        <img src="assets/images/<?php echo htmlspecialchars($boss['boss_image']); ?>" alt="boss" class="h-10 mx-auto">
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-2 py-3 text-center"><?php echo $boss['xp_reward']; ?></td>

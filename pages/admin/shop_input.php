@@ -19,7 +19,7 @@ include 'pages/db.php';
     <div class="flex-1 p-8">
       <h2 class="text-2xl font-bold mb-4 text-gray-800">Tambah Item Shop</h2>
 
-      <form action="index.php?modul=shop&fitur=create" method="POST" class="bg-white p-6 rounded shadow-md w-full max-w-xl">
+      <form action="index.php?modul=shop&fitur=create" method="POST" enctype="multipart/form-data" class="bg-white p-6 rounded shadow-md w-full max-w-xl">
         <!-- Nama Item -->
         <div class="mb-4">
           <label for="nama_item" class="block text-gray-700 font-semibold mb-1">Nama Item</label>
@@ -46,14 +46,8 @@ include 'pages/db.php';
 
         <!-- File Icon -->
         <div class="mb-4">
-          <label for="file_icon" class="block text-gray-700 font-semibold mb-1">Nama File Icon (mis: clue.png)</label>
-          <input type="text" name="file_icon" id="file_icon" class="w-full p-2 border border-gray-300 rounded" required>
-        </div>
-
-        <!-- Efek -->
-        <div class="mb-4">
-          <label for="efek" class="block text-gray-700 font-semibold mb-1">Efek Item</label>
-          <input type="text" name="efek" id="efek" class="w-full p-2 border border-gray-300 rounded">
+          <label for="file_icon" class="block text-gray-700 font-semibold mb-1">Upload Icon (PNG/JPG/JPEG)</label>
+          <input type="file" name="file_icon" id="file_icon" accept="image/png, image/jpeg, image/jpg" class="w-full p-2 border border-gray-300 rounded" required>
         </div>
 
         <!-- Tombol Aksi -->

@@ -22,11 +22,10 @@ class ShopModel {
         $deskripsi = mysqli_real_escape_string($this->conn, $data['deskripsi']);
         $harga = (int)$data['harga_coin'];
         $file = mysqli_real_escape_string($this->conn, $data['file_icon']);
-        $efek = mysqli_real_escape_string($this->conn, $data['efek']);
 
-        return mysqli_query($this->conn, "INSERT INTO items 
-        (nama_item, tipe_item, deskripsi, harga_coin, file_icon, efek, tersedia) 
-        VALUES ('$nama', '$tipe', '$deskripsi', $harga, '$file', '$efek', 1)");
+        return mysqli_query($this->conn, "INSERT INTO shop_items 
+        (nama_item, tipe_item, deskripsi, harga_coin, file_icon, tersedia) 
+        VALUES ('$nama', '$tipe', '$deskripsi', $harga, '$file', 1)");
     }
 
     public function update($id, $data) {
@@ -36,10 +35,11 @@ class ShopModel {
         $deskripsi = mysqli_real_escape_string($this->conn, $data['deskripsi']);
         $harga = (int)$data['harga_coin'];
         $file = mysqli_real_escape_string($this->conn, $data['file_icon']);
+        $tersedia = isset($data['tersedia']) ? 1 : 0;
 
         return mysqli_query($this->conn, "UPDATE shop_items SET 
         nama_item='$nama', tipe_item='$tipe', deskripsi='$deskripsi', 
-        harga_coin=$harga, file_icon='$file' 
+        harga_coin=$harga, file_icon='$file', tersedia=$tersedia 
         WHERE id_item = $id");
     }
 

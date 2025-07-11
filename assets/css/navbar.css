@@ -65,7 +65,7 @@
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 30 30' fill='%23ffffff' xmlns='http://www.w3.org/2000/svg'%3e%3cpath stroke='rgba%28 255, 255, 255, 0.7 %29)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
-/* Tombol custom (jika digunakan) */
+/* Tombol pixel style */
 .btn-pixel {
   background-color: #FFD700;
   color: black;
@@ -82,16 +82,37 @@
   box-shadow: 1px 1px 0 #000;
 }
 
+/* Avatar container */
+.navbar-profile-container {
+  display: flex;
+  align-items: center;
+}
 
+.navbar-profile-avatar {
+  margin-left: 10px;
+  transition: opacity 0.2s ease-in-out;
+}
 
-/* Responsif */
+/* Responsif: kecilkan teks, sejajarkan menu, sembunyikan avatar */
 @media (max-width: 768px) {
   .pixel-font {
     font-size: 12px;
   }
 
+  .navbar-nav {
+    flex-direction: row !important;
+    justify-content: center;
+    gap: 12px;
+  }
+
   .navbar-nav .nav-link {
     font-size: 10px;
-    padding-left: 10px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .navbar-profile-container,
+  .navbar-profile-avatar {
+    display: none !important;
   }
 }

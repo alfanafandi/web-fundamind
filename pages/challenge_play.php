@@ -10,7 +10,10 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $today = date('Y-m-d');
 // Cek apakah user sudah mengerjakan challenge hari ini
-if (isset($_SESSION['last_challenge_date']) && $_SESSION['last_challenge_date'] === $today) {
+$cek = mysqli_query($koneksi, "SELECT last_challenge_date FROM users WHERE id_user = $user_id");
+$last_data = mysqli_fetch_assoc($cek);
+
+if ($last_data['last_challenge_date'] === $today) {
 ?>
     <!DOCTYPE html>
     <html lang="id">
@@ -238,7 +241,8 @@ while ($row = mysqli_fetch_assoc($item_query)) {
 
             <?php if (isset($_SESSION['notifikasi_item'])): ?>
                 <div class="alert alert-info text-center">
-                    <strong><?= $_SESSION['notifikasi_item']; unset($_SESSION['notifikasi_item']); ?></strong>
+                    <strong><?= $_SESSION['notifikasi_item'];
+                            unset($_SESSION['notifikasi_item']); ?></strong>
                 </div>
             <?php endif; ?>
 
@@ -248,7 +252,7 @@ while ($row = mysqli_fetch_assoc($item_query)) {
             <form method="post" id="formJawaban">
                 <div class="choice-grid">
                     <?php foreach (['a', 'b', 'c', 'd'] as $opt): ?>
-                        <?php if (!empty($current_question['pilihan_' . $opt])): ?>
+                        <?php if (isset($current_question['pilihan_' . $opt])): ?>
                             <label>
                                 <input type="radio" name="jawaban" value="<?= $opt ?>" onchange="document.getElementById('formJawaban').submit();">
                                 <div class="choice-card"><?= htmlspecialchars($current_question['pilihan_' . $opt]) ?></div>

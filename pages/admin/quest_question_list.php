@@ -10,7 +10,7 @@ $totalResult = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM quest_quest
 $totalRows = mysqli_fetch_assoc($totalResult)['total'];
 $totalPages = ceil($totalRows / $perPage);
 
-$query = "SELECT id_question, id_chapter, pertanyaan, pilihan_a, pilihan_b, pilihan_c, pilihan_d, jawaban_benar, petunjuk, min_level, kategori FROM quest_questions ORDER BY id_question ASC LIMIT $perPage OFFSET $offset";
+$query = "SELECT id_question, id_chapter, pertanyaan, pilihan_a, pilihan_b, pilihan_c, pilihan_d, jawaban_benar, petunjuk, min_level FROM quest_questions ORDER BY id_question ASC LIMIT $perPage OFFSET $offset";
 $result = mysqli_query($koneksi, $query);
 ?>
 
@@ -51,7 +51,6 @@ $result = mysqli_query($koneksi, $query);
                             <th class="px-2 py-3 w-10 text-center">Benar</th>
                             <th class="px-2 py-3 w-32 text-left">Petunjuk</th>
                             <th class="px-2 py-3 w-10 text-center">Level</th>
-                            <th class="px-2 py-3 w-20 text-center">Kategori</th>
                             <th class="px-2 py-3 w-20 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -68,7 +67,6 @@ $result = mysqli_query($koneksi, $query);
                                 <td class="px-2 py-3 text-center"><?php echo htmlspecialchars($q['jawaban_benar']); ?></td>
                                 <td class="px-2 py-3 max-w-[100px] truncate"><?php echo htmlspecialchars($q['petunjuk']); ?></td>
                                 <td class="px-2 py-3 text-center"><?php echo $q['min_level']; ?></td>
-                                <td class="px-2 py-3 text-center max-w-[100px] truncate"><?php echo htmlspecialchars($q['kategori']); ?></td>
                                 <td class="px-2 py-3 text-center space-x-2">
                                     <a href="index.php?modul=quest_question&fitur=edit&id=<?php echo $q['id_question']; ?>" class="text-blue-600 hover:underline">Edit</a>
                                     <a href="index.php?modul=quest_question&fitur=delete&id=<?php echo $q['id_question']; ?>" onclick="return confirm('Yakin ingin menghapus soal ini?')" class="text-red-600 hover:underline">Hapus</a>
