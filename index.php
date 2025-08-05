@@ -14,13 +14,13 @@ if ($modul === 'auth') {
 }
 
 if ($modul === 'user') {
-    require_once __DIR__ . '../controllers/users_controller.php';
+    include_once 'controllers/users_controller.php';
     $controller = new UserController($koneksi);
     $controller->handle($fitur);
 }
 
 if ($modul === 'admin') {
-    require_once __DIR__ . '../controllers/admin_controller.php';
+    include_once 'controllers/admin_controller.php';
     $controller = new AdminController($koneksi);
     $controller->handle($fitur);
 }

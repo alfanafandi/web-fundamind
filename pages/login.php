@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (password_verify($password, $admin['password'])) {
         $_SESSION['admin'] = true;
         $_SESSION['admin_username'] = $admin['username'];
-        header("Location: /Fundamind-main/index.php?modul=admin&fitur=dashboard");
+        header("Location: /index.php?modul=admin&fitur=dashboard");
         exit;
       } else {
         $error = "Password admin salah.";
